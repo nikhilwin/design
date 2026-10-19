@@ -1,0 +1,153 @@
+{
+  "prebundled": {
+    "onnxruntime-web": [
+      "onnxruntime-common",
+      "guid-typescript",
+      "flatbuffers",
+      "long",
+      "platform",
+      "protobufjs"
+    ]
+  },
+  "supplementary": {
+    "onnxruntime-web": {
+      "note": "Text of LICENSE in https://github.com/microsoft/onnxruntime (main, read 2026-10-09); the npm package carries no licence file.",
+      "text": "MIT License\n\nCopyright (c) Microsoft Corporation\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    },
+    "onnxruntime-common": {
+      "note": "Text of LICENSE in https://github.com/microsoft/onnxruntime (main, read 2026-10-09); the npm package carries no licence file.",
+      "text": "MIT License\n\nCopyright (c) Microsoft Corporation\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    },
+    "guid-typescript": {
+      "note": "The npm package and its repository (https://github.com/NicolasDeveloper/guid-typescript, read 2026-10-09) carry no licence file; the ISC licence is declared in package.json only. The code is inlined in the onnxruntime-web bundle.",
+      "text": ""
+    }
+  },
+  "overrides": {
+    "pip:certifi": {
+      "licence": "MPL-2.0",
+      "evidence": "Metadata gives only the classifier 'Mozilla Public License 2.0 (MPL 2.0)'; the LICENSE file is the MPL-2.0 notice for the bundled CA certificate list."
+    },
+    "pip:psycopg2-binary": {
+      "licence": "LGPL-3.0-or-later",
+      "evidence": "Metadata says 'LGPL with exceptions'; the LICENSE file grants the GNU LGPL version 3 or later, plus a linking exception for OpenSSL."
+    },
+    "pip:python-dateutil": {
+      "licence": "BSD-3-Clause OR Apache-2.0",
+      "evidence": "Metadata says 'Dual License'; the LICENSE file offers the Apache License 2.0 or the BSD 3-clause licence (code before December 2017 is BSD-3-Clause only)."
+    }
+  },
+  "decisions": {
+    "npm:axe-core": {
+      "decision": "accept, dev/test only",
+      "reason": "MPL-2.0 is file-level copyleft. The package is only loaded by the accessibility checks of the end-to-end suite (frontend/e2e/app/a11y.spec.ts); it is not in the production bundle (verified from the build's source maps), is used unmodified and is not redistributed."
+    },
+    "npm:@axe-core/playwright": {
+      "decision": "accept, dev/test only",
+      "reason": "MPL-2.0, same as axe-core: test tooling only, unmodified, not in the production bundle, not redistributed."
+    },
+    "npm:caniuse-lite": {
+      "decision": "accept, build tooling only",
+      "reason": "Data licensed CC-BY-4.0 (attribution), read by Babel/browserslist while building. Nothing of it is in the production bundle (verified from the build's source maps) or in any image, so no attribution obligation arises from distribution; dropping it is not possible without dropping the Vite React plugin."
+    },
+    "pip:certifi": {
+      "decision": "accept",
+      "reason": "MPL-2.0 covers only the CA certificate list, which is data. It is installed unmodified from PyPI (a dependency of requests), so the MPL source-availability duty is met by PyPI and the upstream repository; copyleft does not reach Doory's code."
+    },
+    "pip:psycopg2-binary": {
+      "decision": "accept, with conditions",
+      "reason": "LGPL-3.0-or-later (with an OpenSSL linking exception), the PostgreSQL driver Django uses. It stays a separate library: installed unmodified from PyPI by pip, imported dynamically, never vendored or patched, so Doory itself remains MIT; an operator can replace it with another build (pip install). psycopg 3 is LGPL-3.0 too and Django has no permissive PostgreSQL driver, so a swap would not help. Condition: never copy its code into this repository."
+    },
+    "pip:hypothesis": {
+      "decision": "accept, dev/test only",
+      "reason": "MPL-2.0, used unmodified by the property-based tests. It is only in requirements-dev.txt, which the Dockerfile does not install, so it is neither in the image nor redistributed."
+    }
+  },
+  "text_reviewed": {
+    "pip:pillow": {
+      "reason": "The wheel's LICENSE (MIT-CMU for Pillow) also reproduces the notices of the libraries bundled in the wheel; FreeType is offered under the FreeType Licence or the GPL-2.0 and the FreeType Licence applies. The GPL text is not what Pillow is distributed under."
+    },
+    "pip:botocore": {
+      "reason": "The NOTICE lists the vendored requests (Apache-2.0) and urllib3 (MIT) and Mozilla's CA bundle, which is MPL-2.0 data. botocore itself is Apache-2.0."
+    }
+  },
+  "purposes": {
+    "npm:@fontsource-variable/caveat": "UI handwriting font (variable Caveat) for notes and captions, served by the app: woff2 files in the bundle",
+    "npm:@fontsource-variable/fraunces": "UI display font (variable Fraunces, with the optical-size axis) for headings and the wordmark, served by the app: woff2 files in the bundle",
+    "npm:@fontsource-variable/inter": "default body font of text in designs (variable Inter), bundled so new text renders instantly and offline: woff2 files in the bundle",
+    "npm:@fontsource-variable/nunito": "UI body font (variable Nunito), served by the app: woff2 files in the bundle",
+    "npm:@fontsource-variable/plus-jakarta-sans": "default heading font of text in designs (variable Plus Jakarta Sans), bundled so new text renders instantly and offline: woff2 files in the bundle",
+    "npm:@tanstack/react-query": "server-state cache of the app shell",
+    "npm:fabric": "canvas engine of the editor",
+    "npm:fflate": "ZIP archive of a multi-page image export (lazy-loaded; also a dependency of jspdf)",
+    "npm:gifenc": "colour reduction (PnnQuant) and LZW compression of the animated GIF export (lazy-loaded, 11 kB minified). Dithering and removal of repeated frames are Doory's own (`frontend/src/editor/engine/export/video/gifPixels.ts`)",
+    "npm:jspdf": "client-side PDF export (lazy-loaded)",
+    "npm:lib0": "binary encoding helpers used by the Yjs protocols",
+    "npm:lucide-react": "editor and app icons",
+    "npm:mp4-muxer": "writes the MP4 file of the video export from WebCodecs output (lazy-loaded, 9 kB gzipped). Its author has deprecated it in favour of Mediabunny, which is MPL-2.0 (file-level copyleft) and so outside the permissive list; 5.2 does what the export needs",
+    "npm:onnxruntime-web": "in-browser model runtime for background removal: the WebAssembly CPU build, loaded lazily and run in a Web Worker (the `.wasm` file is built by Microsoft from onnxruntime and its third-party sources, see the notes below)",
+    "npm:qrcode": "QR code objects (lazy-loaded)",
+    "npm:react": "UI library",
+    "npm:react-dom": "UI renderer",
+    "npm:react-router-dom": "routing of the app shell",
+    "npm:webm-muxer": "writes the WebM file of the video export (lazy-loaded, 7 kB gzipped); same deprecation note as `mp4-muxer`",
+    "npm:y-protocols": "Yjs sync and awareness wire protocol",
+    "npm:yjs": "CRDT document of real-time co-editing",
+    "npm:zustand": "editor state store",
+    "npm:@axe-core/playwright": "automated accessibility checks of every shell page in the end-to-end suite (`frontend/e2e/app/a11y.spec.ts`); never part of the app bundle",
+    "npm:@eslint/js": "lint rules",
+    "npm:@playwright/test": "end-to-end test runner",
+    "npm:@testing-library/jest-dom": "unit-test matchers",
+    "npm:@testing-library/react": "unit-test helpers for React components",
+    "npm:@testing-library/user-event": "unit-test user input",
+    "npm:@types/node": "type declarations",
+    "npm:@types/qrcode": "type declarations",
+    "npm:@types/react": "type declarations",
+    "npm:@types/react-dom": "type declarations",
+    "npm:@vitejs/plugin-react": "React support of the Vite build",
+    "npm:canvas": "node-canvas for unit tests in jsdom",
+    "npm:eslint": "linter",
+    "npm:eslint-plugin-react-hooks": "lint rules",
+    "npm:eslint-plugin-react-refresh": "lint rules",
+    "npm:fake-indexeddb": "IndexedDB for unit tests",
+    "npm:globals": "lint configuration",
+    "npm:jsdom": "DOM for unit tests",
+    "npm:msw": "HTTP mocking in unit tests",
+    "npm:typescript": "type checker and compiler",
+    "npm:typescript-eslint": "lint rules for TypeScript",
+    "npm:vite": "dev server and production bundler",
+    "npm:vitest": "unit-test runner",
+    "pip:boto3": "S3-compatible object storage client (used when `USE_S3` is set)",
+    "pip:brotli": "Brotli codec that fontTools needs to read and write woff2 fonts",
+    "pip:channels": "ASGI and WebSocket layer of real-time co-editing",
+    "pip:channels-redis": "shared channel layer for several real-time workers (with `redis-py`, MIT)",
+    "pip:defusedxml": "safe XML parsing in the SVG sanitiser, element import and print layout",
+    "pip:django": "web framework",
+    "pip:django-cors-headers": "CORS headers",
+    "pip:django-environ": "settings from environment variables",
+    "pip:django-filter": "API filtering",
+    "pip:django-storages": "S3 storage backend",
+    "pip:django-unfold": "theme of the Django admin used for content",
+    "pip:djangorestframework": "HTTP API",
+    "pip:drf-spectacular": "OpenAPI schema and the staff-only Swagger page",
+    "pip:fonttools": "inspects uploaded and downloaded font files",
+    "pip:google-auth": "verifies Google sign-in tokens",
+    "pip:gunicorn": "production WSGI server of the API",
+    "pip:pillow": "validates uploaded raster images and makes thumbnails (the wheel bundles libjpeg-turbo, libpng, zlib, FreeType, HarfBuzz, LittleCMS, OpenJPEG, libwebp, libtiff; their notices are in the wheel)",
+    "pip:playwright": "drives headless Chromium for server-side print PDF export. The wheel bundles Playwright's Node.js driver (MIT; its dependencies' notices are in `driver/package/ThirdPartyNotices.txt`); the browser itself is downloaded by `playwright install` only when `INSTALL_CHROMIUM=true`, see the decisions above",
+    "pip:psycopg2-binary": "PostgreSQL driver of Django (the wheel bundles libpq, PostgreSQL licence, and OpenSSL, Apache-2.0)",
+    "pip:pycrdt": "Yjs-compatible CRDT, bindings to the Rust `yrs` engine (real-time co-editing)",
+    "pip:pypdf": "writes the TrimBox/BleedBox, `/Lang` and `/Creator` of the PDF Chromium printed; page content is copied unchanged",
+    "pip:requests": "outbound HTTP: font, element pack, model and audio pack downloads, stock photo search",
+    "pip:uvicorn": "production ASGI server of the real-time service",
+    "pip:websockets": "WebSocket protocol implementation used by uvicorn",
+    "pip:whitenoise": "serves the admin's static files",
+    "pip:daphne": "ASGI development server (not installed in the production image)",
+    "pip:factory-boy": "test data factories",
+    "pip:hypothesis": "property-based tests; never installed in the production image or redistributed with the product",
+    "pip:pytest": "test runner",
+    "pip:pytest-django": "Django integration of pytest",
+    "pip:ruff": "linter and formatter",
+    "npm:axe-core": "the accessibility rule engine that `@axe-core/playwright` runs in the page under test; never part of the app bundle"
+  }
+}

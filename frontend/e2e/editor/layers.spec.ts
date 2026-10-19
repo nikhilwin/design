@@ -1,0 +1,76 @@
+/**
+ * [layout] The Layers panel UI.
+ * [engine] specs must keep passing in any chrome; [layout] specs target the current UI and are to be rewritten with it.
+ */
+import { expect, test } from '@playwright/test'
+import { addShape, openEditor, openTool, pageObjects, waitForObjectCount } from './helpers'
+
+test.describe('[layout] layers panel', () => {
+  test('lists layers top-first, selects, renames, toggles lock and visibility', async ({ page }) => {
+    await openEditor(page, 'doc=blank')
+    await addShape(page, 'rect')
+    await addShape(page, 'ellipse')
+    await addShape(page, 'star')
+    await waitForObjectCount(page, 3)
+    await openTool(page, 'layers')
+    const rows = page.getByRole('treeitem')
+    await expect(rows).toHaveCount(3)
+    await expect(rows.first()).toContainText('Shape')
+    await page.keyboard.press('Escape')
+    await rows.nth(2).click()
+    const ids = (await pageObjects(page)).map((o) => o.id)
+    await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true')
+    // Rename.
+    await rows.nth(2).getByText('Shape').dblclick()
+    const input = page.getByRole('textbox', { name: 'Rename layer' })
+    await input.fill('Background card')
+    await input.press('Enter')
+    await expect.poll(async () => (await pageObjects(page))[0].name).toBe('Background card')
+    await expect(rows.nth(2)).toContainText('Background card')
+    // Lock and hide.
+    await rows.nth(1).hover()
+    await rows.nth(1).getByRole('button', { name: 'Lock layer' }).click()
+    await expect.poll(async () => (await pageObjects(page))[1].locked).toBe(true)
+    await rows.nth(0).hover()
+    await rows.nth(0).getByRole('button', { name: 'Hide layer' }).click()
+    await expect.poll(async () => (await pageObjects(page))[2].visible).toBe(false)
+    expect((await pageObjects(page)).map((o) => o.id)).toEqual(ids)
+  })
+
+  test('drag to reorder changes stacking order', async ({ page }) => {
+    await openEditor(page, 'doc=blank')
+    await addShape(page, 'rect')
+    await addShape(page, 'ellipse')
+    await addShape(page, 'star')
+    await openTool(page, 'layers')
+    const before = (await pageObjects(page)).map((o) => o.id)
+    const rows = page.getByRole('treeitem')
+    // Drag the top row (star) below the bottom row (rectangle): the star ends up at the bottom of the stack.
+    const from = await rows.nth(0).boundingBox()
+    const to = await rows.nth(2).boundingBox()
+    if (!from || !to) throw new Error('rows not found')
+    await page.mouse.move(from.x + 60, from.y + from.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(to.x + 60, to.y + to.height * 0.9, { steps: 8 })
+    await page.mouse.up()
+    await expect.poll(async () => (await pageObjects(page)).map((o) => o.id)).toEqual([before[2], before[0], before[1]])
+  })
+
+  test('keyboard reordering with Alt+Arrow and groups can be expanded', async ({ page }) => {
+    await openEditor(page, 'doc=blank')
+    await addShape(page, 'rect')
+    await addShape(page, 'ellipse')
+    await openTool(page, 'layers')
+    const before = (await pageObjects(page)).map((o) => o.id)
+    await page.getByRole('treeitem').nth(1).focus()
+    await page.keyboard.press('Alt+ArrowUp')
+    await expect.poll(async () => (await pageObjects(page)).map((o) => o.id)).toEqual([before[1], before[0]])
+    await page.keyboard.press('Control+a')
+    await page.keyboard.press('Control+g')
+    await waitForObjectCount(page, 1)
+    const group = page.getByRole('treeitem').first()
+    await expect(group).toHaveAttribute('aria-expanded', 'false')
+    await group.getByRole('button', { name: 'Expand group' }).click()
+    await expect(page.getByRole('treeitem')).toHaveCount(3)
+  })
+})

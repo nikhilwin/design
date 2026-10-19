@@ -1,0 +1,45 @@
+{% load i18n %}
+{% if env_providers or env_errors %}
+<div class="mb-6 border border-base-200 dark:border-base-800 rounded-default p-4">
+  <h2 class="font-semibold mb-1">{% translate "Providers from the environment" %}</h2>
+  <p class="mb-3 text-sm text-font-subtle-light dark:text-font-subtle-dark">
+    {% translate "Set with AI_PROVIDER_n_* in .env; change them there. Their secrets are never shown." %}
+  </p>
+  {% if env_providers %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left">
+        <th class="py-1 pr-4">{% translate "Id" %}</th>
+        <th class="py-1 pr-4">{% translate "Name" %}</th>
+        <th class="py-1 pr-4">{% translate "Style" %}</th>
+        <th class="py-1 pr-4">{% translate "Tasks" %}</th>
+        <th class="py-1 pr-4">{% translate "Models" %}</th>
+        <th class="py-1 pr-4">{% translate "Quota per day" %}</th>
+        <th class="py-1"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in env_providers %}
+      <tr class="border-t border-base-200 dark:border-base-800">
+        <td class="py-2 pr-4 font-mono">{{ row.provider.id }}</td>
+        <td class="py-2 pr-4">{{ row.provider.name }}</td>
+        <td class="py-2 pr-4">{{ row.provider.style }}</td>
+        <td class="py-2 pr-4">{{ row.tasks }}</td>
+        <td class="py-2 pr-4">{{ row.models }}</td>
+        <td class="py-2 pr-4">{{ row.provider.daily_quota|default:"—" }}</td>
+        <td class="py-2 text-right">
+          <form method="post" action="{{ row.test_url }}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="border border-base-200 dark:border-base-700 px-3 py-1 rounded-default cursor-pointer">{% translate "Test" %}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% for error in env_errors %}
+  <p class="mt-2 text-sm text-red-600">{{ error }} {% translate "This provider is left out." %}</p>
+  {% endfor %}
+</div>
+{% endif %}

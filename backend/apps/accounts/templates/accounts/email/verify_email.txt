@@ -1,0 +1,8 @@
+{% autoescape off %}Hi {{ user.name }},
+
+Welcome to Doory. Confirm your email address by opening this link:
+
+{{ action_url }}
+
+The link expires in 24 hours. If you did not create a Doory account, you can ignore this message.
+{% endautoescape %}

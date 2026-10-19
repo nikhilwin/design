@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl py-6">
+  <h1 class="font-semibold text-lg mb-2">{{ title }}</h1>
+  <p class="mb-6 text-sm text-font-subtle-light dark:text-font-subtle-dark">{{ message }}</p>
+  <form method="post" action="{{ action_url }}" class="inline-flex items-center gap-3">
+    {% csrf_token %}
+    <button type="submit" class="border border-base-200 dark:border-base-700 bg-primary-600 font-semibold px-4 py-2 rounded-default cursor-pointer">{{ confirm_label }}</button>
+    <a href="{{ back_url }}" class="border border-base-200 dark:border-base-700 px-4 py-2 rounded-default">{% translate "Cancel" %}</a>
+  </form>
+</div>
+{% endblock %}

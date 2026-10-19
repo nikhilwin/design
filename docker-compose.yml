@@ -1,0 +1,258 @@
+# Doory: PostgreSQL + API (gunicorn) + real-time server (uvicorn, WebSockets for co-editing) + MCP server for
+# AI assistants (uvicorn) + web (nginx serving the SPA and proxying the API). Redis is optional (profile "redis").
+#
+#   cp .env.example .env     # then edit it
+#   docker compose up -d --build
+#
+# The site is published on http://localhost:${WEB_PORT:-8080} (set WEB_BIND=127.0.0.1 to keep it
+# private to a reverse proxy running on the same host). Put a TLS-terminating reverse proxy in
+# front of the `web` service for anything public.
+name: design
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doory}
+      POSTGRES_USER: ${POSTGRES_USER:-doory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+      args:
+        INSTALL_CHROMIUM: ${INSTALL_CHROMIUM:-true}
+    restart: unless-stopped
+    init: true  # reaps the Chromium child processes of the PDF export
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DJANGO_SETTINGS_MODULE: doory.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      SITE_URL: ${SITE_URL:?Set SITE_URL in .env}
+      CSRF_TRUSTED_ORIGINS: ${SITE_URL}
+      DATABASE_URL: postgres://${POSTGRES_USER:-doory}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-doory}
+      CACHE_URL: dbcache://doory_cache
+      MEDIA_ROOT: /app/media
+      EXPORT_STORAGE_ROOT: /app/exports
+      REDIS_URL: ${REDIS_URL:-}
+      # The headless render page of the image export, on the web container (opt-in: SERVER_IMAGE_EXPORT_ENABLED=true).
+      EXPORT_RENDER_PAGE_URL: ${EXPORT_RENDER_PAGE_URL:-http://doory-web:8080/render.html}
+    volumes:
+      - media:/app/media
+      - exports:/app/exports
+      # Your own size presets (DOORY_SIZE_PRESETS_FILE=/config/size-presets.json in .env):
+      # - ./config/size-presets.json:/config/size-presets.json:ro
+    networks:
+      default:
+        # The name the web container's nginx uses; unique even on a network shared with other apps.
+        aliases: [doory-api]
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+    # Chromium (server-side PDF export) needs more shared memory than Docker's 64 MB default.
+    shm_size: "512m"
+
+  # Live editing: the same image as `api`, served by uvicorn so WebSockets work. Run more than one worker
+  # (REALTIME_WORKERS) or replica only together with Redis: `docker compose --profile redis up -d`.
+  realtime:
+    build:
+      context: ./backend
+      args:
+        INSTALL_CHROMIUM: ${INSTALL_CHROMIUM:-true}
+    restart: unless-stopped
+    init: true
+    # A hostile update can make the CRDT engine allocate a lot of memory; the limit makes the kernel stop this
+    # service (and `restart` bring it back) instead of starving the host.
+    mem_limit: ${REALTIME_MEM_LIMIT:-2g}
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+        required: false
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DJANGO_SETTINGS_MODULE: doory.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      SITE_URL: ${SITE_URL:?Set SITE_URL in .env}
+      CSRF_TRUSTED_ORIGINS: ${SITE_URL}
+      DATABASE_URL: postgres://${POSTGRES_USER:-doory}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-doory}
+      CACHE_URL: dbcache://doory_cache
+      MEDIA_ROOT: /app/media
+      REDIS_URL: ${REDIS_URL:-}
+      HEALTH_PORT: "8001"
+    volumes:
+      - media:/app/media
+    networks:
+      default:
+        aliases: [doory-realtime]
+    command:
+      - uvicorn
+      - doory.asgi:application
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+      - --workers
+      - ${REALTIME_WORKERS:-1}
+      - --ws
+      - auto
+      - --ws-max-size
+      - "2097152"
+      - --lifespan
+      - "off"
+      - --no-server-header
+      - --timeout-graceful-shutdown
+      - "20"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+  # MCP server for AI assistants (Claude, Cursor…), at /mcp: the same image, served by uvicorn. Stateless, so it
+  # can run several workers (MCP_WORKERS). Edits to designs open in the editor reach their rooms at once with
+  # Redis, otherwise within a few seconds. Opt-in: set `MCP_ENABLED=true` and `COMPOSE_PROFILES=mcp` in .env.
+  mcp:
+    profiles: [mcp]
+    build:
+      context: ./backend
+      args:
+        INSTALL_CHROMIUM: ${INSTALL_CHROMIUM:-true}
+    restart: unless-stopped
+    init: true
+    # An edit to a design open in the editor replays its whole update log here, so a large or hostile log can
+    # take a lot of memory; as for `realtime`, the kernel stops this service instead of starving the host.
+    mem_limit: ${MCP_MEM_LIMIT:-1g}
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+        required: false
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DJANGO_SETTINGS_MODULE: doory.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      SITE_URL: ${SITE_URL:?Set SITE_URL in .env}
+      CSRF_TRUSTED_ORIGINS: ${SITE_URL}
+      DATABASE_URL: postgres://${POSTGRES_USER:-doory}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-doory}
+      CACHE_URL: dbcache://doory_cache
+      MEDIA_ROOT: /app/media
+      EXPORT_STORAGE_ROOT: /app/exports
+      REDIS_URL: ${REDIS_URL:-}
+      # The headless render page of the image export, on the web container (opt-in: SERVER_IMAGE_EXPORT_ENABLED=true).
+      EXPORT_RENDER_PAGE_URL: ${EXPORT_RENDER_PAGE_URL:-http://doory-web:8080/render.html}
+      HEALTH_PORT: "8002"
+      HEALTH_PATH: /mcp/health
+    volumes:
+      - media:/app/media
+      - exports:/app/exports
+    networks:
+      default:
+        aliases: [doory-mcp]
+    # export_design renders in Chromium, which needs more shared memory than Docker's 64 MB default.
+    shm_size: "512m"
+    command:
+      - uvicorn
+      - doory.mcp_asgi:application
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8002"
+      - --workers
+      - ${MCP_WORKERS:-1}
+      - --no-server-header
+      - --timeout-graceful-shutdown
+      - "20"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+  # Optional: the reference AI server for background removal (models with open licences, CPU only). Opt-in:
+  # add `ai` to COMPOSE_PROFILES, and set AI_SERVER_API_KEY: it doesn't start without one. Not published on
+  # the host; the api reaches it at http://ai-server:7000.
+  ai-server:
+    profiles: [ai]
+    build:
+      context: ./deploy/ai-server
+      args:
+        MODELS: ${AI_SERVER_MODELS:-isnet-general-use,u2netp}  # baked into the image at build time
+    restart: unless-stopped
+    init: true
+    # Each loaded model stays in memory; the limit stops this service (and `restart` brings it back) instead of
+    # starving the host.
+    mem_limit: ${AI_SERVER_MEM_LIMIT:-2g}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      AVAILABLE_MODELS: ${AI_SERVER_MODELS:-isnet-general-use,u2netp}
+      DEFAULT_MODEL: ${AI_SERVER_DEFAULT_MODEL:-isnet-general-use}
+      API_KEY: ${AI_SERVER_API_KEY:-}
+      WORKERS: ${AI_SERVER_WORKERS:-1}
+      OMP_NUM_THREADS: ${AI_SERVER_THREADS:-4}
+
+  # Optional: shares live rooms between several realtime workers or replicas. Nothing is stored in it.
+  redis:
+    image: redis:7.2-alpine
+    profiles: ["redis"]
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      api:
+        condition: service_healthy
+      realtime:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8080}:8080"
+    volumes:
+      - media:/srv/media:ro
+    networks:
+      default:
+        # The API's image export opens render.html here (EXPORT_RENDER_PAGE_URL).
+        aliases: [doory-web]
+
+volumes:
+  pgdata:
+  media:
+  exports:

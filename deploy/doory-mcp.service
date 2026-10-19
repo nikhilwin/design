@@ -1,0 +1,25 @@
+# Doory MCP server for AI assistants (uvicorn, Streamable HTTP) on 127.0.0.1:8002, without Docker. Optional: install
+# it next to deploy/doory-api.service and set MCP_ENABLED=true in .env; nginx forwards /mcp to it
+# (deploy/nginx.conf). Stateless: more workers are fine. With REDIS_URL set, edits to designs open in the editor
+# reach their rooms at once.
+[Unit]
+Description=Doory MCP server
+After=network.target postgresql.service doory-api.service
+
+[Service]
+User=doory
+Group=doory
+WorkingDirectory=/opt/doory/backend
+Environment=DJANGO_SETTINGS_MODULE=doory.settings.prod
+ExecStart=/opt/doory/backend/.venv/bin/uvicorn doory.mcp_asgi:application \
+    --host 127.0.0.1 --port 8002 --workers 1 \
+    --no-server-header --timeout-graceful-shutdown 20
+Restart=always
+RestartSec=5
+# A live edit replays the design's whole update log in this process: cap it instead of starving the host.
+MemoryMax=1G
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

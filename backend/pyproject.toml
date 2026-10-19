@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "S", "C4", "SIM", "RUF"]
+ignore = ["DJ001", "RUF012", "S101", "B904"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S", "E501"]
+"**/tests.py" = ["S", "E501"]
+"**/test_*.py" = ["S", "E501"]
+"doory/settings/*.py" = ["F403", "F405", "S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "doory"]

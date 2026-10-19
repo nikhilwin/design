@@ -1,0 +1,35 @@
+# Development overrides: only the database runs in Docker; run the API and the Vite dev server on the
+# host (`make dev-api`, `make dev-web`). Use it on its own:
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# and point the API at it with DATABASE_URL=postgres://doory:doory@localhost:5432/doory in backend/.env.
+name: design-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: doory
+      POSTGRES_USER: doory
+      POSTGRES_PASSWORD: doory
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doory -d doory"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Optional (profile "redis"): only needed to try several realtime workers locally. A single
+  # `make dev-api` process uses the in-memory channel layer; set REDIS_URL=redis://localhost:6379/0 to use this.
+  redis:
+    image: redis:7.2-alpine
+    profiles: ["redis"]
+    ports:
+      - "127.0.0.1:6379:6379"
+
+volumes:
+  pgdata-dev:

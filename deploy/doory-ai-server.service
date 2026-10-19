@@ -1,0 +1,36 @@
+# Doory reference AI server for background removal (uvicorn, FastAPI, rembg) on 127.0.0.1:7000, without Docker.
+# Optional: install it next to deploy/doory-api.service, then set AI_PROVIDER_1_URL=http://127.0.0.1:7000 and
+# AI_PROVIDER_1_AUTH_VALUE (the same key as API_KEY in /etc/doory/ai-server.env) in Doory's .env.
+# Models with open licences only (Apache-2.0, MIT), CPU only. Download them once before starting (see
+# deploy/ai-server/README.md); the service itself needs no outbound network.
+[Unit]
+Description=Doory reference AI server (background removal)
+After=network.target doory-api.service
+
+[Service]
+User=doory
+Group=doory
+WorkingDirectory=/opt/doory/deploy/ai-server
+StateDirectory=doory/models
+Environment=U2NET_HOME=/var/lib/doory/models
+Environment=OMP_NUM_THREADS=4
+Environment=NUMBA_CACHE_DIR=/tmp/numba
+Environment=AVAILABLE_MODELS=isnet-general-use,u2netp
+Environment=DEFAULT_MODEL=isnet-general-use
+# API_KEY=… (and other settings) here; readable by root only.
+EnvironmentFile=-/etc/doory/ai-server.env
+ExecStart=/opt/doory/deploy/ai-server/.venv/bin/uvicorn app:app \
+    --host 127.0.0.1 --port 7000 --workers 1 \
+    --no-server-header --timeout-graceful-shutdown 20
+Restart=always
+RestartSec=5
+MemoryMax=2G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

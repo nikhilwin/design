@@ -1,0 +1,27 @@
+# Doory API (gunicorn) on 127.0.0.1:8000, without Docker. Paths assume the checkout is /opt/doory and a `doory` user.
+#
+#   sudo cp deploy/doory-api.service deploy/doory-realtime.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now doory-api doory-realtime
+#
+# Settings come from /opt/doory/backend/.env (see docs/self-hosting/manual.md).
+[Unit]
+Description=Doory API
+After=network.target postgresql.service
+
+[Service]
+User=doory
+Group=doory
+WorkingDirectory=/opt/doory/backend
+Environment=DJANGO_SETTINGS_MODULE=doory.settings.prod
+ExecStart=/opt/doory/backend/.venv/bin/gunicorn doory.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 3 --worker-class gthread --threads 4 \
+    --timeout 120 --graceful-timeout 30 \
+    --access-logfile -
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

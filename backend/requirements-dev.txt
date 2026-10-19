@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest>=8
+pytest-django>=4.9
+factory-boy>=3.3
+pypdf>=5
+ruff>=0.8
+daphne>=4.1
+hypothesis>=6.100
+httpx>=0.27  # the MCP HTTP tests (apps/mcp/tests/test_http.py) drive the ASGI app with it

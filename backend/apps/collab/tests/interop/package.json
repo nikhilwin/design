@@ -1,0 +1,12 @@
+{
+  "name": "doory-collab-interop",
+  "private": true,
+  "description": "A reference Yjs client used by the collab tests to prove the wire protocol with the real implementation.",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "lib0": "0.2.119",
+    "y-protocols": "1.0.7",
+    "yjs": "13.6.33"
+  }
+}

@@ -1,0 +1,21 @@
+.skeleton {
+  display: block;
+  background: linear-gradient(100deg, var(--color-bg-muted) 30%, var(--color-border) 50%, var(--color-bg-muted) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

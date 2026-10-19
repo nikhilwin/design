@@ -1,0 +1,24 @@
+# Doory real-time co-editing (uvicorn, WebSockets) on 127.0.0.1:8001, without Docker. Installed together with
+# deploy/doory-api.service. More than one worker needs REDIS_URL in backend/.env, so live rooms are shared.
+[Unit]
+Description=Doory real-time co-editing
+After=network.target postgresql.service doory-api.service
+
+[Service]
+User=doory
+Group=doory
+WorkingDirectory=/opt/doory/backend
+Environment=DJANGO_SETTINGS_MODULE=doory.settings.prod
+ExecStart=/opt/doory/backend/.venv/bin/uvicorn doory.asgi:application \
+    --host 127.0.0.1 --port 8001 --workers 1 \
+    --ws auto --ws-max-size 2097152 --lifespan off \
+    --no-server-header --timeout-graceful-shutdown 20
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+# A hostile update can make the co-editing engine allocate a lot of memory; stop it here instead of starving the host.
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
