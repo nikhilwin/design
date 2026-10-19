@@ -47,7 +47,6 @@ RUN chmod +x docker-entrypoint.sh \
 
 USER doory
 EXPOSE 8000 8001
-VOLUME ["/app/media"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD ["python", "/app/healthcheck.py"]
