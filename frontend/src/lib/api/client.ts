@@ -2,7 +2,8 @@
  * The single HTTP seam of the app: same-origin JSON over fetch with session cookies and CSRF.
  * Every failure surfaces as an `ApiError` so UI code never inspects raw Responses.
  */
-export const API_BASE = '/api/v1'
+const envApiUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || ''
+export const API_BASE = (envApiUrl ? String(envApiUrl).replace(/\/+$/, '') : '') + '/api/v1'
 
 export type QueryValue = string | number | boolean | null | undefined
 
@@ -226,7 +227,13 @@ async function send(method: Method, path: string, options: RequestOptions, retri
 async function parse<T>(response: Response): Promise<T> {
   if (response.status === 204 || response.status === 205) return undefined as T
   const type = response.headers.get('content-type') ?? ''
-  if (!type.includes('json')) return undefined as T
+  if (!type.includes('json')) {
+    throw new ApiError({
+      status: response.status,
+      code: 'invalid_response',
+      message: 'Expected a JSON response from the server, but received non-JSON content. If deploying frontend and backend separately, verify API rewrites or VITE_API_URL.',
+    })
+  }
   return (await response.json()) as T
 }
 

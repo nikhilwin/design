@@ -13,8 +13,8 @@ export const fontsApi = {
     const families: FontFamily[] = []
     for (let page = 1; page <= MAX_CATALOGUE_PAGES; page++) {
       const result = await http.get<Page<FontFamily>>('/fonts/', { query: { ordering: 'family', page, page_size: 100 }, signal })
-      families.push(...result.results)
-      if (!result.next) break
+      if (result?.results) families.push(...result.results)
+      if (!result?.next) break
     }
     return families
   },
@@ -23,8 +23,8 @@ export const fontsApi = {
     const families: FontFamily[] = []
     for (let page = 1; page <= MAX_MINE_PAGES; page++) {
       const result = await http.get<Page<FontFamily>>('/fonts/mine/', { query: { page }, signal })
-      families.push(...result.results)
-      if (!result.next) break
+      if (result?.results) families.push(...result.results)
+      if (!result?.next) break
     }
     return families
   },

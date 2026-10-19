@@ -62,7 +62,7 @@ export function useDesignsList(query: DesignQuery, enabled = true) {
 }
 
 export function flattenPages<T>(data: InfiniteData<Page<T>, unknown> | undefined): T[] {
-  return data?.pages.flatMap((page) => page.results) ?? []
+  return data?.pages?.flatMap((page) => page?.results ?? []) ?? []
 }
 
 export function useCreateDesign() {

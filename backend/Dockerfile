@@ -47,7 +47,6 @@ RUN chmod +x docker-entrypoint.sh \
 
 USER doory
 EXPOSE 8000 8001
-# Note: /app/media persistence is managed via platform volumes (e.g. Railway Volumes), not Dockerfile VOLUME.
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD ["python", "/app/healthcheck.py"]

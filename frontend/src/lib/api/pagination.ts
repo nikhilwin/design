@@ -1,8 +1,9 @@
 import type { Page } from '@/types/api'
 
 /** Some list endpoints (e.g. folders) may answer a bare array or a paginated envelope. */
-export function toList<T>(data: Page<T> | T[]): T[] {
-  return Array.isArray(data) ? data : data.results
+export function toList<T>(data: Page<T> | T[] | undefined | null): T[] {
+  if (!data) return []
+  return Array.isArray(data) ? data : (data.results ?? [])
 }
 
 /** Next page number from a DRF `next` URL, or null. */
