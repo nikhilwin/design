@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://design-production-787e.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "https://design-production-787e.up.railway.app/media/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "https://design-production-787e.up.railway.app/static/:path*"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://design-production-787e.up.railway.app/admin/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
